@@ -1,0 +1,268 @@
+{
+  "name": "Inventory-Management",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1011c496-79e4-4e53-ab20-d582b16f3b69",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Te3sQQc1ZxMAjGExoL5FeHaCyLhjLWS8B8lXtoRfnAY",
+          "mode": "list",
+          "cachedResultName": "Product NameCurrent StockReorder ThresholdCategor...",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Te3sQQc1ZxMAjGExoL5FeHaCyLhjLWS8B8lXtoRfnAY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1444908049,
+          "mode": "list",
+          "cachedResultName": "Product NameCurrent StockReorder ThresholdCategor...",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Te3sQQc1ZxMAjGExoL5FeHaCyLhjLWS8B8lXtoRfnAY/edit#gid=1444908049"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "eb2c6a12-eca7-4bb1-9cdf-9b8ab7f8f8fc",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5ZhzymfSW4Ek8VZP",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "34f06af3-309c-4f8c-bf37-80f320b6b4f3",
+              "leftValue": "={{ $json['Current Stock'] }}",
+              "rightValue": "={{ $json['Reorder Threshold'] }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "20f2812d-1342-4ac7-8195-0f285a690036",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Category }}",
+                    "rightValue": "Raw Material",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "84858cae-d2bb-4a76-bad1-3c6c9d11146a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Raw Material"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "917de073-3fb7-45a4-adc0-b930555af7a5",
+                    "leftValue": "={{ $json.Category }}",
+                    "rightValue": "Finished Goods",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Finished Goods"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1bccf1d9-1ca8-4515-9c43-18d88a01962f",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Supplier Email'] }}",
+        "subject": "=URGENT Reorder for Raw Material: {{ $json[\"Product Name\"] }}",
+        "message": "=Dear S,  We require an urgent reorder for the following Raw Material item:  Product Name: {{ $json[\"Product Name\"] }} Current Stock: {{ $json[\"Current Stock\"] }} Reorder Threshold: {{ $json[\"Reorder Threshold\"] }} Required Quantity:  {{ $json['Reorder Quantity'] }} (Please send your standard pack size).  Please confirm the order and dispatch timeline.  Thank you, Suleiman Ahmed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "43184fa6-d7df-47ae-87d6-b3c7fffff93e",
+      "name": "Send a message",
+      "webhookId": "024b4eb3-acf9-4161-9ff3-665b6e9d5eee",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dPfyCbJQsJB7aIHt",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Supplier Email'] }}",
+        "subject": "=URGENT RESTOCK ORDER: Finished Goods -  {{ $json['Product Name'] }}",
+        "message": "=Dear Finished Goods Supplier,  This is an automated restock request from our inventory system. The following finished product has fallen below its safety stock threshold.  Product Details: Product Name: {{ $json[\"Product Name\"] }} Current Stock: {{ $json[\"Current Stock\"] }} Reorder Threshold: {{ $json[\"Reorder Threshold\"] }}  Required Order Quantity: {{ $json[\"Reorder Quantity\"] }} units  Please acknowledge this order and confirm the expected delivery date for the {{ $json[\"Reorder Quantity\"] }} units.  Thank you, [Your Name/Company Name] Replenishment Department",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        832,
+        96
+      ],
+      "id": "39c8fdb6-3369-4410-ad20-2fbe39bdeef2",
+      "name": "Send a message1",
+      "webhookId": "00940542-4cec-43fd-a029-9ad699bc6337",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dPfyCbJQsJB7aIHt",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5e9c5f46-5bc5-47a6-a651-db463a7929ab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "47ced7fefb5fde9fdc884624b26e008f6672c2d303905738fb38ec25386deb27"
+  },
+  "id": "WXgh3aWdgYgs2GTC",
+  "tags": []
+}
